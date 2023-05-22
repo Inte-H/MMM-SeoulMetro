@@ -1,5 +1,5 @@
 const NodeHelper = require("node_helper");
-const request = require('request');
+const axios = require("axios");
 const Log = require("logger");
 
 module.exports = NodeHelper.create({
@@ -12,39 +12,48 @@ module.exports = NodeHelper.create({
     },
 
     getStationArrivalInfo: function (payload) {
-        var url = payload.apiURLFront + payload.apiKey + payload.apiURLBack + encodeURI(payload.statnNm);
+        let url = payload.apiURLFront + payload.apiKey + payload.apiURLBack + encodeURI(payload.statnNm);
         Log.log(`Requesting ${url} ...`);
-        var upLine = [];
-        var dnLine = [];
-        request({
-            url: url,
-            method: 'GET'
-        }, (error, response, body) => {
-            if (!error & response.statusCode === 200) {
-                var result = JSON.parse(body);
-                result.realtimeArrivalList.forEach(element => {
-                    const { trainLineNm, arvlMsg2 } = element;
-                    switch (element.updnLine) {
-                        case "상행":
-                            upLine = [...upLine, {
-                                trainLineNm,
-                                arvlMsg2
-                            }];
-                            break;
+        let upLine = [];
+        let dnLine = [];
 
-                        case "하행":
-                            dnLine = [...dnLine, {
-                                trainLineNm,
-                                arvlMsg2
-                            }];
-                            break;
-                    }
-                    this.sendSocketNotification("STATION_ARRIVAL_INFO", { upLine, dnLine });
-                });
-            } else {
+        axios.get(url)
+            .then(response => {
+                if (response.status === 200) {
+                    let result = response.data;
+                    result.realtimeArrivalList.forEach(element => {
+                        let { trainLineNm, arvlMsg2 } = element;
+                        trainLineNm = trainLineNm.split(' - ')[0];
+                        arvlMsg2 = ((msg) => {
+                            const regex = /^\[.+/;
+                            if (regex.test(msg)) {
+                                return msg.replace(/\[(\d+)\]번째 전역.+/, '$1번째 전역');
+                            }
+                            return msg.replace(/역 도착/, '');
+                        })(arvlMsg2);
+                        Log.log(trainLineNm, arvlMsg2);
+                        switch (element.updnLine) {
+                            case "상행":
+                                upLine = [...upLine, {
+                                    trainLineNm,
+                                    arvlMsg2
+                                }];
+                                break;
 
-            }
-        })
+                            case "하행":
+                                dnLine = [...dnLine, {
+                                    trainLineNm,
+                                    arvlMsg2
+                                }];
+                                break;
+                        }
+                        this.sendSocketNotification("STATION_ARRIVAL_INFO", { upLine, dnLine });
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching station arrival info:", error);
+            });
     },
 
     socketNotificationReceived: function (notification, payload) {

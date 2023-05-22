@@ -5,13 +5,17 @@ Module.register("MMM-SeoulMetro", {
         Interval: 1000 * 60,
     },
 
+    getStyles: function () {
+        return ["MMM-SeoulMetro.css"]
+    },
+
     loaded: function () {
         Log.log(this.name + ' is loaded!');
     },
 
     start: function () {
         Log.log(this.name + ' is started!');
-        this.stationInfo = null;
+        this.stationInfo = {};
         this.getStationArrivalInfo();
         setInterval(() => {
             this.getStationArrivalInfo();
@@ -23,7 +27,7 @@ Module.register("MMM-SeoulMetro", {
         this.sendSocketNotification("GET_STATION_ARRIVAL_INFO", this.config);
     },
 
-    notificationReceived: function (notification, _, _) {
+    notificationReceived: function (notification) {
         switch (notification) {
             case "ALL_MODULES_STARTED":
                 this.getStationArrivalInfo();
@@ -49,54 +53,57 @@ Module.register("MMM-SeoulMetro", {
     },
 
     getDom: function () {
-        var wrapper = document.createElement("div");
-        var table = document.createElement("table");
-        var tableHead = document.createElement("thead");
+        const container = document.createElement('div');
+        container.className = 'container';
 
-        var stationNameRow = document.createElement("tr");
-        stationNameRow.className = "stationName";
-        var prevStation = document.createElement("td");
-        prevStation.innerHTML = "보정";
-        var station = document.createElement("td");
-        station.innerHTML = this.config.statnNm;
-        var nextStation = document.createElement("td");
-        nextStation.innerHTML = "오리";
-        stationNameRow.append(prevStation, station, nextStation)
-        tableHead.appendChild(stationNameRow);
+        const stationRow = this.createDOMElement('div', 'stationrow');
 
-        var LineRow1 = document.createElement("tr");
-        var upTrain1 = document.createElement("td");
-        var dnTrain1 = document.createElement("td");
-        var LineRow2 = document.createElement("tr");
-        var upTrain2 = document.createElement("td");
-        var dnTrain2 = document.createElement("td");
-        var empty1 = document.createElement("td");
-        var empty2 = document.createElement("td");
-        var upTrains = [upTrain1, upTrain2];
-        var dnTrains = [dnTrain1, dnTrain2];
-        upTrains.forEach((train) => {
-            if (this.stationInfo?.upLine) {
-                [e, ...rest] = this.stationInfo.upLine;
-                if (e) {
-                    train.innerHTML = `${e.trainLineNm} ${e.arvlMsg2}`;
-                    this.stationInfo.upLine = [...rest];
-                }
-            }
-        });
-        dnTrains.forEach((train) => {
-            if (this.stationInfo?.dnLine) {
-                [e, ...rest] = this.stationInfo.dnLine;
-                if (e) {
-                    train.innerHTML = `${e.trainLineNm} ${e.arvlMsg2}`;
-                    this.stationInfo.upLine = [...rest];
-                }
-            }
-        });
-        LineRow1.append(upTrain1, empty1, dnTrain1);
-        LineRow2.append(upTrain2, empty2, dnTrain2);
+        const previousTrain = this.createDOMElement('div', 'direction', '보정');
+        const currentStation = this.createDOMElement('div', 'station', this.config.statnNm);
+        const nextTrain = this.createDOMElement('div', 'direction', '오리');
 
-        table.append(tableHead, LineRow1, LineRow2);
-        wrapper.appendChild(table);
-        return wrapper;
-    }
+        stationRow.append(previousTrain, currentStation, nextTrain);
+        container.appendChild(stationRow);
+
+        for (let i = 0; i < 2; i++) {
+            const timetable = this.createTimetableRow(this.stationInfo);
+            container.appendChild(timetable);
+        }
+
+        return container;
+    },
+
+    createTimetableRow: function (stationInfo) {
+        const { upLine = [], dnLine = [] } = stationInfo;
+        const timetableRow = this.createDOMElement('div', 'timetable');
+
+        const [upLineFirst = {}, ...upLineRest] = upLine;
+        const { trainLineNm: upTrainLineNm = '', arvlMsg2: upArvlMsg2 = '' } = upLineFirst;
+        this.stationInfo.upLine = upLineRest;
+
+        const timeElem1 = this.createDOMElement('div', 'time', `${upTrainLineNm} ${upArvlMsg2}`);
+
+        const station = this.createDOMElement('div', 'station');
+
+        const [dnLineFirst = {}, ...dnLineRest] = dnLine;
+        const { trainLineNm: dnTrainLineNm = '', arvlMsg2: dnArvlMsg2 = '' } = dnLineFirst;
+        this.stationInfo.dnLine = dnLineRest;
+
+        const timeElem2 = this.createDOMElement('div', 'time', `${dnTrainLineNm} ${dnArvlMsg2}`);
+
+        timetableRow.append(timeElem1, station, timeElem2);
+        return timetableRow;
+
+    },
+
+    createDOMElement: function (tagName, className, textContent) {
+        const element = document.createElement(tagName);
+        if (className) {
+            element.className = className;
+        }
+        if (textContent) {
+            element.textContent = textContent;
+        }
+        return element;
+    },
 });

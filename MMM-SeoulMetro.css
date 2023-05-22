@@ -1,0 +1,52 @@
+.timetable {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+}
+
+.stationrow {
+    width: 300px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+}
+
+.station {
+    font-weight: bold;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.train {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.direction {
+    font-weight: bold;
+}
+
+.time {
+    font-size: 13px;
+    color: #888;
+    position: relative;
+    visibility: visible;
+}
+
+.timetable::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background-color: #888;
+    z-index: 0;
+}
