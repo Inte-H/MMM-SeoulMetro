@@ -31,13 +31,11 @@ Module.register("MMM-SeoulMetro", {
         switch (notification) {
             case "ALL_MODULES_STARTED":
                 this.getStationArrivalInfo();
-                Log.log(`${notification} notification received in ${this.name}.`);
                 break;
             case "DOM_OBJECT_CREATED":
                 setInterval(() => {
                     this.getStationArrivalInfo();
                 }, this.config.Interval);
-                Log.log(`${notification} notification received in ${this.name}.`);
                 break;
         }
     },
@@ -53,14 +51,19 @@ Module.register("MMM-SeoulMetro", {
     },
 
     getDom: function () {
+        let { previousStation, nextStation } = this.stationInfo;
+        if (previousStation)
+            previousStation = [...previousStation].join(',');
+        if (nextStation)
+            nextStation = [...nextStation].join(',');
         const container = document.createElement('div');
         container.className = 'container';
 
         const stationRow = this.createDOMElement('div', 'stationrow');
 
-        const previousTrain = this.createDOMElement('div', 'direction', '보정');
+        const previousTrain = this.createDOMElement('div', 'direction', previousStation);
         const currentStation = this.createDOMElement('div', 'station', this.config.statnNm);
-        const nextTrain = this.createDOMElement('div', 'direction', '오리');
+        const nextTrain = this.createDOMElement('div', 'direction', nextStation);
 
         stationRow.append(previousTrain, currentStation, nextTrain);
         container.appendChild(stationRow);
@@ -78,18 +81,18 @@ Module.register("MMM-SeoulMetro", {
         const timetableRow = this.createDOMElement('div', 'timetable');
 
         const [upLineFirst = {}, ...upLineRest] = upLine;
-        const { trainLineNm: upTrainLineNm = '', arvlMsg2: upArvlMsg2 = '' } = upLineFirst;
+        const { trainLineName: upTrainLineName = '', arrivalMessage: upArrivalMessage = '' } = upLineFirst;
         this.stationInfo.upLine = upLineRest;
 
-        const timeElem1 = this.createDOMElement('div', 'time', `${upTrainLineNm} ${upArvlMsg2}`);
+        const timeElem1 = this.createDOMElement('div', 'time', `${upTrainLineName} ${upArrivalMessage}`);
 
         const station = this.createDOMElement('div', 'station');
 
         const [dnLineFirst = {}, ...dnLineRest] = dnLine;
-        const { trainLineNm: dnTrainLineNm = '', arvlMsg2: dnArvlMsg2 = '' } = dnLineFirst;
+        const { trainLineName: dnTrainLineName = '', arrivalMessage: dnArrivalMessage = '' } = dnLineFirst;
         this.stationInfo.dnLine = dnLineRest;
 
-        const timeElem2 = this.createDOMElement('div', 'time', `${dnTrainLineNm} ${dnArvlMsg2}`);
+        const timeElem2 = this.createDOMElement('div', 'time', `${dnTrainLineName} ${dnArrivalMessage}`);
 
         timetableRow.append(timeElem1, station, timeElem2);
         return timetableRow;

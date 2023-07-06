@@ -12,43 +12,52 @@ module.exports = NodeHelper.create({
     },
 
     getStationArrivalInfo: function (payload) {
-        let url = payload.apiURLFront + payload.apiKey + payload.apiURLBack + encodeURI(payload.statnNm);
-        Log.log(`Requesting ${url} ...`);
+        const url = payload.apiURLFront + payload.apiKey + payload.apiURLBack + encodeURI(payload.statnNm);
+        Log.log(`Requesting...`);
         let upLine = [];
         let dnLine = [];
+        const previousStation = new Set();
+        const nextStation = new Set();
 
         axios.get(url)
             .then(response => {
                 if (response.status === 200) {
-                    let result = response.data;
+                    const result = response.data;
                     result.realtimeArrivalList.forEach(element => {
-                        let { trainLineNm, arvlMsg2 } = element;
-                        trainLineNm = trainLineNm.split(' - ')[0];
-                        arvlMsg2 = ((msg) => {
+                        const { trainLineNm, arvlMsg2 } = element;
+                        const [trainLineName, direction] = trainLineNm.split(' - ');
+                        const arrivalMessage = ((msg) => {
                             const regex = /^\[.+/;
                             if (regex.test(msg)) {
                                 return msg.replace(/\[(\d+)\]번째 전역.+/, '$1번째 전역');
                             }
                             return msg.replace(/역 도착/, '');
                         })(arvlMsg2);
-                        Log.log(trainLineNm, arvlMsg2);
+                        const updnDirection = ((e) => {
+                            const regex = /방면.*$/;
+                            return e.replace(regex, "");
+                        })(direction);
+
+
                         switch (element.updnLine) {
                             case "상행":
                                 upLine = [...upLine, {
-                                    trainLineNm,
-                                    arvlMsg2
+                                    trainLineName,
+                                    arrivalMessage
                                 }];
+                                nextStation.add(updnDirection);
                                 break;
 
                             case "하행":
                                 dnLine = [...dnLine, {
-                                    trainLineNm,
-                                    arvlMsg2
+                                    trainLineName,
+                                    arrivalMessage
                                 }];
+                                previousStation.add(updnDirection);
                                 break;
                         }
-                        this.sendSocketNotification("STATION_ARRIVAL_INFO", { upLine, dnLine });
                     });
+                    this.sendSocketNotification("STATION_ARRIVAL_INFO", { upLine, dnLine, previousStation: [...previousStation], nextStation: [...nextStation] });
                 }
             })
             .catch(error => {
