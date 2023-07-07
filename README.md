@@ -2,6 +2,10 @@
 
 `MMM-SeoulMetro` 모듈은 서울시 지하철의 실시간 도착 정보를 표시하는 MagicMirror 모듈입니다. 이 모듈은 서울특별시에서 제공하는 서울시 열린데이터 광장의 API를 사용하여 데이터를 가져옵니다.
 
+## 미리보기
+
+![image](https://github.com/Inte-H/MMM-SeoulMetro/assets/86886486/ce1baa6d-5a48-43aa-aef8-e6bc0e2f73b1)
+
 ## 설치
 
 1. 명령 프롬프트에서 MagicMirror의 `modules` 디렉토리로 이동합니다.
