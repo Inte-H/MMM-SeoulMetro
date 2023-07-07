@@ -10,7 +10,7 @@
 
 ## 설정
 
-이 모듈을 사용하려면 MagicMirror 설치의 `config/config.js` 파일의 modules 배열에 추가하세요.
+이 모듈을 사용하려면 MagicMirror가 설치된 디렉토리의 `config/config.js` 파일의 modules 배열에 추가하세요.
 
 ```javascript
 {
